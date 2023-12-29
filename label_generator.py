@@ -6,39 +6,39 @@
 # @Time    : 2023/12/28 15:25
 # @Author  : GosuXX
 # @File    : label_generator.py
+
 import os
 import cv2
 import numpy as np
+from PIL import Image
+
+from utils.env import clear_path
 
 
-def generate_images_and_labels(dir):
-    labels = []
-    images = []
-    label = 0
+def gen_faces_xml():
+    """ Generate the yml file for face-data. """
+    clear_path(res_path := os.path.abspath("res"))
+    recognizer = cv2.face.LBPHFaceRecognizer.create()
+    model_file = f'{os.path.dirname(cv2.__file__)}\\data\\haarcascade_frontalface_default.xml'
+    detector = cv2.CascadeClassifier(model_file)
+    image_paths = [os.path.join("dataset", f) for f in os.listdir("dataset")]
+    face_samples = []
+    label_ids = []
 
-    # 遍历目录中的每个子目录
-    for subdir in os.listdir(dir):
-        subdir_path = os.path.join(dir, subdir)
+    for image_path in image_paths:
+        img = Image.open(image_path).convert('L')
+        img_np = np.array(img, 'uint8')
+        if os.path.split(image_path)[-1].split(".")[-1] != 'jpg':
+            continue
 
-        if os.path.isdir(subdir_path):
-            # 遍历子目录中的每个图像文件
-            for filename in os.listdir(subdir_path):
-                filepath = os.path.join(subdir_path, filename)
+        label_id = hash(os.path.split(image_path)[-1].split(".")[0])
+        faces = detector.detectMultiScale(img_np)
 
-                # 读取图像文件
-                img = cv2.imread(filepath)  # cv2.IMREAD_GRAYSCALE
+        for (x, y, w, h) in faces:
+            face_samples.append(img_np[y:y + h, x:x + w])
+            label_ids.append(label_id)
 
-                if img is not None:
-                    # 将图像添加到图像列表中
-                    images.append(img)
-                    # 将标签添加到标签列表中
-                    labels.append(label)
-
-            # 对于每个子目录，我们使用一个新的标签
-            label += 1
-
-    return images, np.array(labels)
-
-
-images, labels = generate_images_and_labels('dataset')
-print("ok")
+    recognizer.train(face_samples, np.array(label_ids))
+    recognizer.save(res_path + "/trainer.yml")
+    print(f"{res_path}/trainer.yml generated!")
+    return face_samples, label_ids
