@@ -11,9 +11,9 @@ import shutil
 
 
 def clear_path(path):
-    try:
-        shutil.rmtree(path)
-    except Exception as e:
-        pass
-    os.mkdir(path)
+    # try:
+    #     shutil.rmtree(path)
+    # except Exception as e:
+    #     pass
+    os.makedirs(path, exist_ok=True)
 

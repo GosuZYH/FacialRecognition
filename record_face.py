@@ -11,7 +11,6 @@ import os
 import cv2
 
 from utils.env import clear_path
-from utils.file_helper import read_yml
 
 
 def record_face():
@@ -20,14 +19,12 @@ def record_face():
     model_file = f'{os.path.dirname(cv2.__file__)}\\data\\haarcascade_frontalface_default.xml'
     face_detector = cv2.CascadeClassifier(model_file)
     face_label = input('Input your name and look at the camera:')
-    all_labels = read_yml("labels.yml")
     count = 0
 
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    while cap.isOpened() and (count <= 100):  # 当摄像头开着的时候且保存的照片少于阈值
+    while cap.isOpened() and (count <= 50):  # 当摄像头开着的时候且保存的照片少于阈值
         ret, frame = cap.read()  # ret为Bool判断读取成功/失败  frame为帧截图
         if not ret:
-            # 摄像头断开就出去
             break
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # 图片covert灰度处理
         face = face_detector.detectMultiScale(gray, 1.3, 5)  # 用选择face_detector把脸信息搞出来

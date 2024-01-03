@@ -13,6 +13,7 @@ import numpy as np
 from PIL import Image
 
 from utils.env import clear_path
+from utils.file_helper import *
 
 
 def gen_faces_xml():
@@ -25,19 +26,29 @@ def gen_faces_xml():
     face_samples = []
     label_ids = []
 
+    all_labels = data if (data := read_yml("labels.yml")) is not None else {}
+    no = 0
+    while all_labels.get(no) is not None:
+        no += 1
+
     for image_path in image_paths:
-        img = Image.open(image_path).convert('L')
-        img_np = np.array(img, 'uint8')
         if os.path.split(image_path)[-1].split(".")[-1] != 'jpg':
             continue
 
-        label_id = hash(os.path.split(image_path)[-1].split(".")[0])
-        faces = detector.detectMultiScale(img_np)
+        label = os.path.split(image_path)[-1].split(".")[0]
+        img = Image.open(image_path).convert('L')
+        img_np = np.array(img, 'uint8')
 
-        for (x, y, w, h) in faces:
+        if label in (labels := list(all_labels.values())):
+            no = labels.index(label)
+        else:
+            all_labels[no] = label
+
+        for (x, y, w, h) in detector.detectMultiScale(img_np):
             face_samples.append(img_np[y:y + h, x:x + w])
-            label_ids.append(label_id)
+            label_ids.append(no)
 
+    write_yml(all_labels, "labels.yml")
     recognizer.train(face_samples, np.array(label_ids))
     recognizer.save(res_path + "/trainer.yml")
     print(f"{res_path}/trainer.yml generated!")
